@@ -4,36 +4,14 @@
 package dbus
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"os/user"
 	"path"
 	"strings"
 )
 
-var execCommand = exec.Command
-
 func getSessionBusPlatformAddress() (string, error) {
-	cmd := execCommand("dbus-launch")
-	b, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-
-	i := bytes.IndexByte(b, '=')
-	j := bytes.IndexByte(b, '\n')
-
-	if i == -1 || j == -1 || i > j {
-		return "", errors.New("dbus: couldn't determine address of session bus")
-	}
-
-	env, addr := string(b[0:i]), string(b[i+1:j])
-	os.Setenv(env, addr)
-
-	return addr, nil
+	return "", fmt.Errorf("Could not determine location of session bus")
 }
 
 // tryDiscoverDbusSessionBusAddress tries to discover an existing dbus session
@@ -41,10 +19,8 @@ func getSessionBusPlatformAddress() (string, error) {
 // It tries different techniques employed by different operating systems,
 // returning the first valid address it finds, or an empty string.
 //
-//   - /run/user/<uid>/bus           if this exists, it *is* the bus socket. present on
-//     Ubuntu 18.04
-//   - /run/user/<uid>/dbus-session: if this exists, it can be parsed for the bus
-//     address. present on Ubuntu 16.04
+//   - /run/user/<uid>/bus           if this exists, it *is* the bus socket.
+//   - /run/user/<uid>/dbus-session: if this exists, it can be parsed for the bus address.
 //
 // See https://dbus.freedesktop.org/doc/dbus-launch.1.html
 func tryDiscoverDbusSessionBusAddress() string {
@@ -76,11 +52,11 @@ func tryDiscoverDbusSessionBusAddress() string {
 }
 
 func getRuntimeDirectory() (string, error) {
-	if currentUser, err := user.Current(); err != nil {
-		return "", err
-	} else {
-		return fmt.Sprintf("/run/user/%s", currentUser.Uid), nil
+	rdir := os.Getenv("XDG_RUNTIME_DIR")
+	if rdir == "" {
+		rdir = fmt.Sprintf("/run/user/%d", os.Getegid())
 	}
+	return rdir, nil
 }
 
 func fileExists(filename string) bool {
