@@ -7,11 +7,6 @@
 
 package dbus
 
-/*
-#include <sys/ucred.h>
-*/
-import "C"
-
 import (
 	"io"
 	"os"
@@ -29,10 +24,6 @@ type Ucred struct {
 
 // http://golang.org/src/pkg/syscall/types_linux.go
 // http://golang.org/src/pkg/syscall/types_dragonfly.go
-// https://github.com/DragonFlyBSD/DragonFlyBSD/blob/master/sys/sys/ucred.h
-const (
-	SizeofUcred = C.sizeof_struct_ucred
-)
 
 // http://golang.org/src/pkg/syscall/sockcmsg_unix.go
 func cmsgAlignOf(salen int) int {
@@ -57,6 +48,9 @@ func cmsgData(h *syscall.Cmsghdr) unsafe.Pointer {
 // for sending to another process. This can be used for
 // authentication.
 func UnixCredentials(ucred *Ucred) []byte {
+	// We just need a size >= than the size of the actual structure, so use a giant size to be safe
+	// https://github.com/DragonFlyBSD/DragonFlyBSD/blob/master/sys/sys/ucred.h
+	const SizeofUcred = 128
 	b := make([]byte, syscall.CmsgSpace(SizeofUcred))
 	h := (*syscall.Cmsghdr)(unsafe.Pointer(&b[0]))
 	h.Level = syscall.SOL_SOCKET
