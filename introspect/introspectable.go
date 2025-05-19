@@ -45,7 +45,7 @@ func NewIntrospectable(n *Node) Introspectable {
 		n.Interfaces = append(n.Interfaces, PeerData)
 	}
 
-	b, err := xml.Marshal(n)
+	b, err := xml.MarshalIndent(n, "", "  ")
 	if err != nil {
 		panic(err)
 	}
